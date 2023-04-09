@@ -17,6 +17,13 @@ class Paragraph:
 
 
 @attr.s(hash=True)
+class Sentence:
+    sentence_id = attr.ib()
+    text = attr.ib()
+    start_char = attr.ib()
+
+
+@attr.s(hash=True)
 class Cloze:
     cloze_id = attr.ib()
     paragraph = attr.ib()

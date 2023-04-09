@@ -19,23 +19,23 @@ SEED = 10
 ## Sensible filter thresholds:
 ## Cloze selection criteria
 MIN_CLOZE_WORD_LEN = 5
-MAX_CLOZE_WORD_LEN = 40
+MAX_CLOZE_WORD_LEN = 50 # 40
 MIN_CLOZE_WORDSIZE = 1
 MAX_CLOZE_WORDSIZE = 20
 MIN_CLOZE_CHAR_LEN = 30
-MAX_CLOZE_CHAR_LEN = 300
+MAX_CLOZE_CHAR_LEN = 500 # 300
 MIN_ANSWER_WORD_LEN = 1
 MAX_ANSWER_WORD_LEN = 20
 MIN_ANSWER_CHAR_LEN = 3
 MAX_ANSWER_CHAR_LEN = 50
 ## remove  with more characters than this
 MAX_PARAGRAPH_CHAR_LEN_THRESHOLD = 2000
-MAX_QUESTION_CHAR_LEN_THRESHOLD = 200
+MAX_QUESTION_CHAR_LEN_THRESHOLD = 500 # 200
 ## remove items with more words than this
 MAX_PARAGRAPH_WORD_LEN_THRESHOLD = 400
-MAX_QUESTION_WORD_LEN_THRESHOLD = 40
+MAX_QUESTION_WORD_LEN_THRESHOLD = 50 # 40
 ## remove items that have words with more characters than this
-MAX_PARAGRAPH_WORDSIZE_THRESHOLD = 20
+MAX_PARAGRAPH_WORDSIZE_THRESHOLD = 50 # 20
 MAX_QUESTION_WORDSIZE_THRESHOLD = 20
 
 
@@ -111,4 +111,52 @@ HEURISTIC_CLOZE_TYPE_QUESTION_MAP = {
     'QUANTITY': ['How much', 'How many'],
     'ORDINAL': ['How much', 'How many'],
     'CARDINAL': ['How much', 'How many'],
+}
+
+
+
+
+
+CLOZE_MASKS = {
+    'CRD': 'NUMERICMASK',
+    'DAT': 'TEMPORALMASK',
+    'EVT': 'THINGMASK',
+    'FAC': 'PLACEMASK',
+    'GPE': 'PLACEMASK',
+    'LAW': 'THINGMASK',
+    'LOC': 'PLACEMASK',
+    'MON': 'NUMERICMASK',
+    'NOR': 'IDENTITYMASK',
+    'ORD': 'NUMERICMASK',
+    'ORG': 'IDENTITYMASK',
+    'PER': 'IDENTITYMASK',
+    'PRC': 'NUMERICMASK',
+    'PRD': 'THINGMASK',
+    'QTY': 'NUMERICMASK',
+    'REG': 'IDENTITYMASK',
+    'TIM': 'TEMPORALMASK',
+    'WOA': 'THINGMASK',
+    'LAN': 'THINGMASK',
+}
+
+HEURISTIC_CLOZE_TYPE_QUESTION_MAP = {
+    'CRD': ['berapa'], # Cardinal
+    'DAT': ['kapan'], # Date
+    'EVT': ['apa', 'apakah'], # Event
+    'FAC': ['dimana'], # Facility
+    'GPE': ['dimana'], # Geopolitical Entity
+    'LAW': ['apa', 'apakah'], # Law Entity (such as Undang-Undang)
+    'LOC': ['dimana'], # Location
+    'MON': ['berapa'], # Money
+    'NOR': ['siapa'], # Political Organization
+    'ORD': ['berapa'], # Ordinal
+    'ORG': ['siapa'], # Organization
+    'PER': ['siapa'], # Person
+    'PRC': ['berapa'], # Percent
+    'PRD': ['apa', 'apakah'], # Product
+    'QTY': ['berapa'], # Quantity
+    'REG': ['siapa'], # Religion
+    'TIM': ['kapan'], # Time
+    'WOA': ['apa', 'apakah'], # Work of Art
+    'LAN': ['apa', 'apakah'], # Language
 }

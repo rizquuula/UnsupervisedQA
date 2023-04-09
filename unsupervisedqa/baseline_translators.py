@@ -11,7 +11,7 @@ referred to as "identity" and "noisy cloze" baselien methods in the publication
 from .configs import HEURISTIC_CLOZE_TYPE_QUESTION_MAP
 import random
 import numpy as np
-import nltk
+# import nltk
 
 
 class NoiserParams(object):
@@ -22,7 +22,8 @@ class NoiserParams(object):
 
 
 def _tokenize(x):
-    return nltk.word_tokenize(x)
+    # return nltk.word_tokenize(x)
+    ...
 
 
 def _word_shuffle(tokens, noiser_params):
@@ -52,7 +53,7 @@ def _get_wh_word(cloze, wh_heuristic):
     if wh_heuristic:
         repl = random.choice(HEURISTIC_CLOZE_TYPE_QUESTION_MAP[cloze.answer_type])
     else:
-        repl = random.choice(['Who', 'What', 'When', 'Where', 'How'])
+        repl = random.choice(['siapa', 'apa', 'kapan', 'dimana', 'bagaimana'])
     return repl
 
 

@@ -7,6 +7,7 @@
 """
 Main interface to user
 """
+from time import time
 import attr
 import argparse
 import os
@@ -15,9 +16,9 @@ from .configs import UNMT_MODEL_SENTENCE_NE, \
     UNMT_MODEL_SUBCLAUSE_NE_WH_HEURISTIC
 from .parsers_and_writers import parse_paragraphs_from_jsonl, parse_paragraphs_from_txt, dump_clozes, clozes2squadformat
 from .generate_clozes import generate_clozes_from_paragraph, named_entity_answer_generator as ne_answer_gen, \
-    noun_phrase_answer_generator as np_answer_gen, is_appropriate_squad_datapoint
-from .constituency_parsing import get_constituency_parsed_clozes, shorten_cloze
-from .unmt_translation import get_unmt_questions_for_clozes
+    noun_phrase_answer_generator as np_answer_gen, is_appropriate_datapoint
+# from .constituency_parsing import get_constituency_parsed_clozes, shorten_cloze
+# from .unmt_translation import get_unmt_questions_for_clozes
 from .baseline_translators import identity_translation, noisy_cloze_translation
 
 
@@ -67,12 +68,12 @@ def get_questions_for_clozes(clozes,
     if translation_method == 'identity':
         clozes_with_questions = [attr.evolve(c, question_text=identity_translation(c, wh_heuristic)) for c in clozes]
 
-    elif translation_method == 'noisy_cloze':
-        clozes_with_questions = [attr.evolve(c, question_text=noisy_cloze_translation(c, wh_heuristic)) for c in clozes]
+    # elif translation_method == 'noisy_cloze':
+    #     clozes_with_questions = [attr.evolve(c, question_text=noisy_cloze_translation(c, wh_heuristic)) for c in clozes]
 
-    elif translation_method == 'unmt':
-        clozes_with_questions = get_unmt_questions_for_clozes(
-            clozes, subclause_clozes,  ne_answers,  wh_heuristic)
+    # elif translation_method == 'unmt':
+    #     clozes_with_questions = get_unmt_questions_for_clozes(
+    #         clozes, subclause_clozes,  ne_answers,  wh_heuristic)
     else:
         raise Exception(f'Unrecognised translation type: {translation_method}')
 
@@ -80,11 +81,13 @@ def get_questions_for_clozes(clozes,
 
 
 def generate_synthetic_training_data(args):
+    start = time()
     _check_args(args)
 
     with open(args.input_file) as f:
         if args.input_file_format == 'jsonl':
-            paragraphs = parse_paragraphs_from_jsonl(f)
+            # paragraphs = parse_paragraphs_from_jsonl(f)
+            raise NotImplementedError('jsonl input type not implemented')
         else:
             paragraphs = parse_paragraphs_from_txt(f)
         paragraphs = list(paragraphs)
@@ -94,13 +97,18 @@ def generate_synthetic_training_data(args):
     print('=' * 50)
 
     # Create clozes:
-    answer_generator = ne_answer_gen if args.use_named_entity_clozes else np_answer_gen
-    clozes = [c for p in paragraphs for c in generate_clozes_from_paragraph(p, answer_generator)]
+    # answer_generator = ne_answer_gen if args.use_named_entity_clozes else np_answer_gen
+    answer_generator = ne_answer_gen
+    
+    clozes = []
+    for p in paragraphs:
+        for c in generate_clozes_from_paragraph(p, answer_generator):
+            clozes.append(c)
 
-    if args.use_subclause_clozes:
-        syntax_clozes = get_constituency_parsed_clozes(clozes)
-        clozes = [short_cloze for cloze in syntax_clozes for short_cloze in shorten_cloze(cloze)]
-        #clozes = list(get_constituency_parsed_clozes(clozes))
+    # if args.use_subclause_clozes:
+    #     syntax_clozes = get_constituency_parsed_clozes(clozes)
+    #     clozes = [short_cloze for cloze in syntax_clozes for short_cloze in shorten_cloze(cloze)]
+    #     #clozes = list(get_constituency_parsed_clozes(clozes))
     print('=' * 50)
     print(f'{len(clozes)} Cloze questions extracted for Translation')
     print('=' * 50)
@@ -116,8 +124,11 @@ def generate_synthetic_training_data(args):
     # filter generations
     clozes_with_questions = [
         c for c in clozes_with_questions
-        if is_appropriate_squad_datapoint(c.question_text, c.answer_text, c.paragraph.text)
+        if is_appropriate_datapoint(c.question_text, c.answer_text, c.paragraph.text)
     ]
+    print('=' * 50)
+    print(f'{len(clozes_with_questions)} Cloze with questions, answer, and paragraph translated')
+    print('=' * 50)
 
     # Dump the synthetic training data
     print('=' * 50)
@@ -125,41 +136,44 @@ def generate_synthetic_training_data(args):
     print('=' * 50)
     for o in args.output_file_formats.split(','):
         if o == 'jsonl':
-            with open(args.output_file + '.unsupervised_qa.jsonl', 'w') as f:
+            filename = args.output_file + f'.unsupervised_qa.{int(time())}.jsonl'
+            with open(filename, 'w') as f:
                 dump_clozes(clozes_with_questions, f)
-            print(f"Exported {len(clozes_with_questions)} instances to {args.output_file + '.unsupervised_qa.jsonl'}")
+            print(f"Exported {len(clozes_with_questions)} instances to {filename}")
 
-        elif o == 'squad':
-            with open(args.output_file + '.squad.json', 'w') as f:
-                clozes2squadformat(clozes_with_questions, f)
-            print(f"Exported {len(clozes_with_questions)} instances to {args.output_file + '.squad.json'}")
+        # elif o == 'squad':
+        #     with open(args.output_file + '.squad.json', 'w') as f:
+        #         clozes2squadformat(clozes_with_questions, f)
+        #     print(f"Exported {len(clozes_with_questions)} instances to {args.output_file + '.squad.json'}")
+        else:
+            NotImplementedError('Other output format is not implemented')
 
     print('=' * 50)
-    print('Complete')
+    print(f'Complete in {int(time() - start)} seconds')
     print('=' * 50)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate synthetic training data for extractive QA tasks without supervision')
-    parser.add_argument("input_file", type=str,
-                        help="input file, see readme for formatting info")
-    parser.add_argument("output_file", type=str,
-                        help="Path to write generated data to, see readme for formatting info")
-    parser.add_argument("--input_file_format", type=str, default='txt', choices=['txt', 'jsonl'],
-                        help="input file format, see readme for more info, default is txt")
-    parser.add_argument("--output_file_formats", type=str, default='jsonl,squad',
-                        help="comma-seperated list of output file formats, from [jsonl, squad]," 
-                             " an output file will be created for each format. Default is 'jsonl,squad'")
-    parser.add_argument("--translation_method", type=str, default="unmt", choices=['identity', 'noisy_cloze', 'unmt'],
-                        help="define the method to generate clozes -- either the Unsupervised NMT method (unmt),"
-                             " or the identity  or noisy cloze baseline methods. UNMT is recommended for downstream performance, "
-                             " but the noisy_cloze is relatively stong on downstream QA and fast to generate. Default is unmt"
-                        )
-    parser.add_argument("--use_named_entity_clozes", action='store_true',
-                        help="pass this flag to use named entity answer prior instead of noun phrases (recommended for downstream performance) ")
-    parser.add_argument('--use_subclause_clozes', action='store_true',
-                        help="pass this flag to shorten clozes with constituency parsing instead of using sentence boundaries (recommended for downstream performance)")
-    parser.add_argument('--use_wh_heuristic', action='store_true',
-                        help="pass this flag to use the wh-word heuristic (recommended for downstream performance). Only compatable with named entity clozes")
-    args = parser.parse_args()
-    generate_synthetic_training_data(args)
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description='Generate synthetic training data for extractive QA tasks without supervision')
+#     parser.add_argument("input_file", type=str,
+#                         help="input file, see readme for formatting info")
+#     parser.add_argument("output_file", type=str,
+#                         help="Path to write generated data to, see readme for formatting info")
+#     parser.add_argument("--input_file_format", type=str, default='txt', choices=['txt', 'jsonl'],
+#                         help="input file format, see readme for more info, default is txt")
+#     parser.add_argument("--output_file_formats", type=str, default='jsonl,squad',
+#                         help="comma-seperated list of output file formats, from [jsonl, squad]," 
+#                              " an output file will be created for each format. Default is 'jsonl,squad'")
+#     parser.add_argument("--translation_method", type=str, default="unmt", choices=['identity', 'noisy_cloze', 'unmt'],
+#                         help="define the method to generate clozes -- either the Unsupervised NMT method (unmt),"
+#                              " or the identity  or noisy cloze baseline methods. UNMT is recommended for downstream performance, "
+#                              " but the noisy_cloze is relatively stong on downstream QA and fast to generate. Default is unmt"
+#                         )
+#     parser.add_argument("--use_named_entity_clozes", action='store_true',
+#                         help="pass this flag to use named entity answer prior instead of noun phrases (recommended for downstream performance) ")
+#     parser.add_argument('--use_subclause_clozes', action='store_true',
+#                         help="pass this flag to shorten clozes with constituency parsing instead of using sentence boundaries (recommended for downstream performance)")
+#     parser.add_argument('--use_wh_heuristic', action='store_true',
+#                         help="pass this flag to use the wh-word heuristic (recommended for downstream performance). Only compatable with named entity clozes")
+#     args = parser.parse_args()
+#     generate_synthetic_training_data(args)
